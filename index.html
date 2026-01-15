@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#111827" />
+  <title>Household Budget</title>
+
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Household Budget">
+  <link rel="apple-touch-icon" href="icon-192.png">
+
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    body { margin: 0; background:#0b1220; color:#e5e7eb; }
+    .wrap { max-width: 560px; margin: 0 auto; padding: 16px; }
+    .card { background:#111827; border:1px solid #1f2937; border-radius: 16px; padding: 14px; box-shadow: 0 8px 30px rgba(0,0,0,.25); }
+    .row { display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+    h1 { font-size: 18px; margin: 6px 0 12px; font-weight: 700; }
+    .big { font-size: 44px; font-weight: 800; letter-spacing: -1px; }
+    .muted { color:#9ca3af; font-size: 12px; }
+    .pill { border:1px solid #374151; border-radius: 999px; padding: 6px 10px; font-size: 12px; color:#d1d5db; }
+    .btn { background:#2563eb; border:none; color:white; padding: 12px 12px; border-radius: 12px; font-weight: 700; width:100%; }
+    .btn:active { transform: translateY(1px); }
+    .btn2 { background:#0f172a; border:1px solid #334155; color:#e5e7eb; padding: 10px 12px; border-radius: 12px; font-weight: 700; }
+    .grid { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    .grid3 { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; }
+    .tabs { display:flex; gap:8px; margin: 12px 0; }
+    .tab { flex:1; padding:10px; border-radius: 12px; border:1px solid #334155; background:#0f172a; color:#e5e7eb; font-weight:800; }
+    .tab.active { background:#2563eb; border-color:#2563eb; }
+    label { font-size: 12px; color:#9ca3af; display:block; margin: 10px 0 6px; }
+    input, select { width:100%; padding: 12px; border-radius: 12px; border:1px solid #334155; background:#0f172a; color:#e5e7eb; font-size: 16px; }
+    table { width:100%; border-collapse: collapse; }
+    td, th { border-bottom:1px solid #1f2937; padding:10px 6px; font-size: 13px; }
+    th { text-align:left; color:#9ca3af; font-weight:700; }
+    .danger { color:#fca5a5; }
+    .warn { color:#fde68a; }
+    .ok { color:#86efac; }
+    .right { text-align:right; }
+    .spacer { height: 10px; }
+    .small { font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="row">
+      <h1>Household Budget</h1>
+      <span class="pill" id="cyclePill">Cycle: —</span>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" id="tabHousehold" type="button">Household</button>
+      <button class="tab" id="tabEating" type="button">Eating Out</button>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <div>
+          <div class="muted">Remaining</div>
+          <div class="big" id="remaining">$0</div>
+        </div>
+        <div class="right">
+          <div class="muted">Budget</div>
+          <div style="font-size:18px;font-weight:800" id="budget">$0</div>
+          <div class="muted small" id="statusLine">—</div>
+        </div>
+      </div>
+
+      <div class="spacer"></div>
+
+      <div class="grid">
+        <button class="btn2" id="quickCostco" type="button">+ Costco</button>
+        <button class="btn2" id="quickWalmart" type="button">+ Walmart</button>
+        <button class="btn2" id="quickAldi" type="button">+ Aldi</button>
+        <button class="btn2" id="quickPublix" type="button">+ Publix</button>
+      </div>
+
+      <div class="spacer"></div>
+
+      <button class="btn" id="addBtn" type="button">Add Purchase</button>
+
+      <div class="spacer"></div>
+
+      <details>
+        <summary class="muted" style="cursor:pointer;">Recent Purchases</summary>
+        <div class="spacer"></div>
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Store</th>
+              <th class="right">Amount</th>
+            </tr>
+          </thead>
+          <tbody id="logBody"></tbody>
+        </table>
+        <div class="spacer"></div>
+        <div class="grid">
+          <button class="btn2" id="undoBtn" type="button">Undo Last</button>
+          <button class="btn2 danger" id="resetBtn" type="button">Reset Now</button>
+        </div>
+      </details>
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="card">
+      <div class="row">
+        <div>
+          <div class="muted">Settings (you can ignore after setup)</div>
+        </div>
+      </div>
+
+      <label>Household budget per paycheck</label>
+      <input type="number" id="householdBudgetInput" value="600" min="0" step="1" />
+
+      <label>Eating out budget per paycheck</label>
+      <input type="number" id="eatingBudgetInput" value="150" min="0" step="1" />
+
+      <label>Cycle length (days)</label>
+      <input type="number" id="cycleDaysInput" value="14" min="7" max="31" step="1" />
+
+      <label>Cycle start date (this determines auto-reset)</label>
+      <input type="date" id="cycleStartInput" />
+
+      <div class="spacer"></div>
+      <div class="grid">
+        <button class="btn2" id="saveSettingsBtn" type="button">Save Settings</button>
+        <button class="btn2" id="exportBtn" type="button">Export CSV</button>
+      </div>
+      <div class="spacer"></div>
+      <div class="muted small">
+        Tip: Set the cycle start date to your most recent payday. The app auto-resets every 14 days.
+      </div>
+    </div>
+  </div>
+
+  <dialog id="addDialog" style="border:none;border-radius:16px;max-width:520px;width:calc(100% - 24px);background:#111827;color:#e5e7eb;">
+    <form method="dialog" style="padding:14px;">
+      <div class="row">
+        <div style="font-weight:900;">Add Purchase</div>
+        <button class="btn2" value="cancel" style="width:auto;">Close</button>
+      </div>
+
+      <label>Store</label>
+      <select id="storeSelect">
+        <option>Costco</option>
+        <option>Walmart</option>
+        <option>Aldi</option>
+        <option>Publix</option>
+        <option>Target</option>
+        <option>Fast Food</option>
+        <option>Restaurant</option>
+        <option>Other</option>
+      </select>
+
+      <label>Amount</label>
+      <input type="number" id="amountInput" inputmode="decimal" min="0" step="0.01" placeholder="e.g. 60" />
+
+      <div class="spacer"></div>
+      <div class="grid3">
+        <button class="btn2" id="add20" type="button">$20</button>
+        <button class="btn2" id="add50" type="button">$50</button>
+        <button class="btn2" id="add100" type="button">$100</button>
+      </div>
+
+      <div class="spacer"></div>
+      <button class="btn" id="savePurchaseBtn" value="ok">Save</button>
+
+      <div class="spacer"></div>
+      <div class="muted small">
+        Household tab counts Costco/Aldi/Publix/Walmart/Target/Other. Eating Out tab counts Fast Food/Restaurant.
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    // --- Storage Keys
+    const KEY = "budget_app_v1";
+
+    // --- Defaults
+    const todayISO = () => new Date().toISOString().slice(0,10);
+    const fmtMoney = (n) => {
+      const v = Number(n || 0);
+      return v.toLocaleString(undefined, { style: "currency", currency: "USD" });
+    };
+
+    const stateDefault = {
+      settings: {
+        householdBudget: 600,
+        eatingBudget: 150,
+        cycleDays: 14,
+        cycleStart: todayISO(), // user should set to payday
+      },
+      // logs store purchases within the current cycle
+      logs: [],
+      // computed cycle index to know when to reset
+      cycleIndex: 0,
+      activeTab: "household" // household | eating
+    };
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(KEY);
+        if (!raw) return structuredClone(stateDefault);
+        const parsed = JSON.parse(raw);
+        return { ...structuredClone(stateDefault), ...parsed };
+      } catch {
+        return structuredClone(stateDefault);
+      }
+    }
+
+    function saveState(s) {
+      localStorage.setItem(KEY, JSON.stringify(s));
+    }
+
+    function daysBetween(aISO, bISO) {
+      const a = new Date(aISO + "T00:00:00");
+      const b = new Date(bISO + "T00:00:00");
+      return Math.floor((b - a) / (1000*60*60*24));
+    }
+
+    function getCycleInfo(settings) {
+      const start = settings.cycleStart;
+      const cycleDays = Number(settings.cycleDays);
+      const elapsed = daysBetween(start, todayISO());
+      const idx = Math.floor(Math.max(0, elapsed) / cycleDays);
+      const cycleStartDate = new Date(start + "T00:00:00");
+      const thisStart = new Date(cycleStartDate.getTime() + idx * cycleDays * 86400000);
+      const thisEnd = new Date(thisStart.getTime() + (cycleDays - 1) * 86400000);
+      const toISO = (d) => d.toISOString().slice(0,10);
+      return { idx, startISO: toISO(thisStart), endISO: toISO(thisEnd) };
+    }
+
+    function maybeAutoReset(s) {
+      const info = getCycleInfo(s.settings);
+      if (info.idx !== s.cycleIndex) {
+        // new cycle started: archive old logs implicitly by clearing
+        s.logs = [];
+        s.cycleIndex = info.idx;
+        saveState(s);
+      }
+      return info;
+    }
+
+    function isEatingStore(store) {
+      return store === "Fast Food" || store === "Restaurant";
+    }
+
+    function computeTotals(s) {
+      const tab = s.activeTab;
+      const budget = tab === "household" ? Number(s.settings.householdBudget) : Number(s.settings.eatingBudget);
+      const spent = s.logs
+        .filter(x => tab === "eating" ? isEatingStore(x.store) : !isEatingStore(x.store))
+        .reduce((sum, x) => sum + Number(x.amount || 0), 0);
+      const remaining = budget - spent;
+      return { budget, spent, remaining };
+    }
+
+    function statusLabel(remaining, budget) {
+      if (budget <= 0) return "—";
+      const pct = remaining / budget;
+      if (remaining < 0) return "🔴 Over budget";
+      if (pct <= 0.2) return "🟡 Getting low";
+      return "🟢 On track";
+    }
+
+    // --- UI bindings
+    const el = (id) => document.getElementById(id);
+
+    const tabHousehold = el("tabHousehold");
+    const tabEating = el("tabEating");
+    const remainingEl = el("remaining");
+    const budgetEl = el("budget");
+    const statusLineEl = el("statusLine");
+    const cyclePillEl = el("cyclePill");
+    const logBody = el("logBody");
+
+    const addDialog = el("addDialog");
+    const storeSelect = el("storeSelect");
+    const amountInput = el("amountInput");
+    const savePurchaseBtn = el("savePurchaseBtn");
+
+    const quickCostco = el("quickCostco");
+    const quickWalmart = el("quickWalmart");
+    const quickAldi = el("quickAldi");
+    const quickPublix = el("quickPublix");
+    const addBtn = el("addBtn");
+    const undoBtn = el("undoBtn");
+    const resetBtn = el("resetBtn");
+
+    const householdBudgetInput = el("householdBudgetInput");
+    const eatingBudgetInput = el("eatingBudgetInput");
+    const cycleDaysInput = el("cycleDaysInput");
+    const cycleStartInput = el("cycleStartInput");
+    const saveSettingsBtn = el("saveSettingsBtn");
+    const exportBtn = el("exportBtn");
+
+    let S = loadState();
+    const cycleInfo = maybeAutoReset(S);
+
+    // initialize settings fields
+    householdBudgetInput.value = S.settings.householdBudget;
+    eatingBudgetInput.value = S.settings.eatingBudget;
+    cycleDaysInput.value = S.settings.cycleDays;
+    cycleStartInput.value = S.settings.cycleStart;
+
+    function render() {
+      const info = maybeAutoReset(S);
+
+      // cycle pill
+      cyclePillEl.textContent = `Cycle: ${info.startISO} → ${info.endISO}`;
+
+      // tabs
+      tabHousehold.classList.toggle("active", S.activeTab === "household");
+      tabEating.classList.toggle("active", S.activeTab === "eating");
+
+      const { budget, remaining } = computeTotals(S);
+
+      remainingEl.textContent = fmtMoney(remaining);
+      budgetEl.textContent = fmtMoney(budget);
+      statusLineEl.textContent = statusLabel(remaining, budget);
+
+      // color cue for remaining
+      remainingEl.classList.remove("ok","warn","danger");
+      if (remaining < 0) remainingEl.classList.add("danger");
+      else if (remaining <= budget * 0.2) remainingEl.classList.add("warn");
+      else remainingEl.classList.add("ok");
+
+      // log (show last 12 relevant to active tab)
+      const tab = S.activeTab;
+      const filtered = S.logs
+        .filter(x => tab === "eating" ? isEatingStore(x.store) : !isEatingStore(x.store))
+        .slice(-12)
+        .reverse();
+
+      logBody.innerHTML = filtered.map(x => `
+        <tr>
+          <td>${x.date}</td>
+          <td>${x.store}</td>
+          <td class="right">${fmtMoney(x.amount)}</td>
+        </tr>
+      `).join("") || `<tr><td colspan="3" class="muted">No purchases yet.</td></tr>`;
+
+      saveState(S);
+    }
+
+    function openAddDialog(storePreset=null) {
+      amountInput.value = "";
+      if (storePreset) storeSelect.value = storePreset;
+      addDialog.showModal();
+      setTimeout(() => amountInput.focus(), 50);
+    }
+
+    // Tabs
+    tabHousehold.addEventListener("click", () => { S.activeTab = "household"; render(); });
+    tabEating.addEventListener("click", () => { S.activeTab = "eating"; render(); });
+
+    // Quick buttons
+    quickCostco.addEventListener("click", () => openAddDialog("Costco"));
+    quickWalmart.addEventListener("click", () => openAddDialog("Walmart"));
+    quickAldi.addEventListener("click", () => openAddDialog("Aldi"));
+    quickPublix.addEventListener("click", () => openAddDialog("Publix"));
+    addBtn.addEventListener("click", () => openAddDialog(null));
+
+    // Amount quick fills
+    el("add20").addEventListener("click", () => { amountInput.value = "20"; amountInput.focus(); });
+    el("add50").addEventListener("click", () => { amountInput.value = "50"; amountInput.focus(); });
+    el("add100").addEventListener("click", () => { amountInput.value = "100"; amountInput.focus(); });
+
+    // Save purchase
+    savePurchaseBtn.addEventListener("click", (e) => {
+      // dialog will close automatically because form method=dialog and button value=ok
+      const amount = Number(amountInput.value);
+      const store = storeSelect.value;
+      if (!amount || amount <= 0) {
+        e.preventDefault();
+        alert("Enter an amount greater than 0.");
+        return;
+      }
+
+      S.logs.push({
+        date: todayISO(),
+        store,
+        amount: Math.round(amount * 100) / 100
+      });
+
+      render();
+    });
+
+    // Undo last (of any type)
+    undoBtn.addEventListener("click", () => {
+      if (!S.logs.length) return;
+      S.logs.pop();
+      render();
+    });
+
+    // Manual reset
+    resetBtn.addEventListener("click", () => {
+      const ok = confirm("Reset now? This clears purchases for the current cycle.");
+      if (!ok) return;
+      S.logs = [];
+      render();
+    });
+
+    // Save settings
+    saveSettingsBtn.addEventListener("click", () => {
+      const hh = Number(householdBudgetInput.value);
+      const ee = Number(eatingBudgetInput.value);
+      const cd = Number(cycleDaysInput.value);
+      const cs = cycleStartInput.value || todayISO();
+
+      if (hh < 0 || ee < 0 || cd < 7) {
+        alert("Please enter valid settings (cycle days >= 7).");
+        return;
+      }
+
+      S.settings.householdBudget = hh;
+      S.settings.eatingBudget = ee;
+      S.settings.cycleDays = cd;
+      S.settings.cycleStart = cs;
+
+      // Recompute cycle index and reset if needed
+      const info = getCycleInfo(S.settings);
+      S.cycleIndex = info.idx;
+      S.logs = [];
+      alert("Saved! New cycle started (purchases cleared).");
+      render();
+    });
+
+    // Export CSV
+    exportBtn.addEventListener("click", () => {
+      const info = getCycleInfo(S.settings);
+      const rows = [["date","store","amount","cycle_start","cycle_end"]];
+      for (const x of S.logs) rows.push([x.date, x.store, x.amount, info.startISO, info.endISO]);
+
+      const csv = rows.map(r => r.map(v => `"${String(v).replaceAll('"','""')}"`).join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `budget_${info.startISO}_to_${info.endISO}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    // Service worker (optional, but enables offline “app” feel)
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch(() => {});
+      });
+    }
+
+    render();
+  </script>
+</body>
+</html>
